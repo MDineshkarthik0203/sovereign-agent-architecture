@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sovereign AI Workbench - Chat & Multimodal Engine</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #38bdf8;
+            --accent-green: #22c55e;
+            --accent-amber: #f59e0b;
+            --accent-purple: #a855f7;
+            --border-color: #334155;
+            --user-msg-bg: #1e3a8a;
+            --assistant-msg-bg: #0f172a;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Header & Navigation */
+        header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-tab-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .nav-tab-btn.active {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .sec-badge {
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Workspace Grid */
+        .workspace {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Left Main Container */
+        .main-panel {
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+            height: 100%;
+            overflow: hidden;
+            background: #090d16;
+        }
+
+        /* View 1: Chat Container */
+        .chat-view {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .chat-header {
+            padding: 12px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .msg-bubble {
+            max-width: 80%;
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .msg-bubble.user {
+            align-self: flex-end;
+            background: var(--user-msg-bg);
+            color: #ffffff;
+            border-bottom-right-radius: 2px;
+        }
+
+        .msg-bubble.assistant {
+            align-self: flex-start;
+            background: var(--assistant-msg-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-bottom-left-radius: 2px;
+        }
+
+        .msg-meta {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .sources-card {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: rgba(56, 189, 248, 0.08);
+            border-left: 3px solid var(--accent-blue);
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .sources-title {
+            font-weight: 700;
+            color: var(--accent-blue);
+            margin-bottom: 4px;
+        }
+
+        .source-item {
+            color: var(--text-primary);
+            font-family: monospace;
+        }
+
+        /* Chat Input Bar */
+        .chat-input-area {
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            color: #ffffff;
+            font-size: 0.9rem;
+            resize: none;
+            height: 48px;
+            outline: none;
+        }
+
+        .chat-input:focus { border-color: var(--accent-blue); }
+
+        .btn-send {
+            padding: 0 20px;
+            background: var(--accent-blue);
+            color: #0f172a;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-send:hover { background: #7dd3fc; }
+
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .action-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .action-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+
+        /* View 2: Document Analysis */
+        .doc-view {
+            padding: 24px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        /* Right Sidebar */
+        .sidebar {
+            background: var(--bg-secondary);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .side-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .side-card-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        .info-table td { padding: 5px 0; color: var(--text-secondary); }
+        .info-table td:last-child { text-align: right; color: #ffffff; font-weight: 600; font-family: monospace; }
+
+        .status-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 0.8rem;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .dot.green { background: var(--accent-green); }
+        .dot.red { background: #ef4444; }
+
+        .thinking-indicator {
+            display: none;
+            padding: 10px 14px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid var(--accent-amber);
+            color: var(--accent-amber);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            align-self: flex-start;
+        }
+
+        /* Document Analysis Elements */
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 16px;
+            background: rgba(15, 23, 42, 0.4);
+        }
+
+        .preview-img { max-width: 100%; max-height: 200px; border-radius: 6px; margin-top: 10px; }
+
+        .fields-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 14px; }
+        .fields-table th, .fields-table td { padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .fields-table td:first-child { color: var(--accent-blue); font-weight: 600; }
+
+        .btn-deliverable {
+            width: 100%; padding: 12px; background: var(--accent-purple); color: #fff;
+            border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="brand-group">
+            <div class="brand-title">🔒 SOVEREIGN AI WORKBENCH</div>
+            <div class="brand-subtitle">Local AI • On-Premise • No Cloud APIs</div>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab-btn active" id="tab-btn-chat" onclick="switchMainTab('chat')">💬 Chat Assistant</button>
+            <button class="nav-tab-btn" id="tab-btn-doc" onclick="switchMainTab('doc')">📄 Document Analysis</button>
+        </div>
+
+        <div class="sec-badge">LOCAL EXECUTION</div>
+    </header>
+
+    <!-- Workspace -->
+    <div class="workspace">
+
+        <!-- Main Panel -->
+        <div class="main-panel">
+
+            <!-- VIEW 1: CHAT ASSISTANT -->
+            <div class="chat-view" id="view-chat">
+                <div class="chat-header">
+                    <div><strong>Active Model:</strong> Qwen3 4B (<span style="font-family: monospace; color: var(--accent-blue);">qwen3:4b-instruct-2507-q4_K_M</span>)</div>
+                    <div style="color: var(--accent-green);">Engine: Ollama (Localhost)</div>
+                </div>
+
+                <div class="chat-messages" id="chat-messages">
+                    <div class="msg-bubble assistant">
+                        Hello! I am your Sovereign AI Assistant running 100% locally on this machine via Ollama. Ask me anything, or attach a document/image for analysis.
+                        <div class="msg-meta"><span>Mode: Local Reasoning</span><span>Engine: Qwen3 4B</span></div>
+                    </div>
+                </div>
+
+                <div class="thinking-indicator" id="thinking-indicator">
+                    ⏳ Thinking locally... Model: Qwen3 4B | Execution: localhost
+                </div>
+
+                <div class="chat-input-area">
+                    <div id="chat-attach-badge" style="display: none; align-items: center; gap: 8px; margin-bottom: 8px; padding: 6px 12px; background: rgba(56, 189, 248, 0.15); border: 1px solid var(--accent-blue); border-radius: 6px; font-size: 0.8rem; color: var(--accent-blue);">
+                        <span id="chat-attach-name">📎 document.txt (0 KB)</span>
+                        <span style="cursor: pointer; font-weight: bold; margin-left: auto;" onclick="clearChatAttachment()">✖</span>
+                    </div>
+                    <input type="file" id="chat-file-input" style="display: none;" onchange="handleChatFileAttached(event)">
+
+                    <div class="input-row">
+                        <textarea class="chat-input" id="chat-input" placeholder="Type your prompt here..." onkeydown="handleChatKey(event)"></textarea>
+                        <button class="btn-send" onclick="sendChatMessage()">Send</button>
+                    </div>
+                    <div class="action-bar">
+                        <button class="action-btn" onclick="triggerChatFileSelect('image/*')">🖼️ Attach Image</button>
+                        <button class="action-btn" onclick="triggerChatFileSelect('*')">📎 Attach Document</button>
+                        <button class="action-btn" style="cursor: default;">⚙️ Qwen3 4B (Active)</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 2: DOCUMENT ANALYSIS -->
+            <div class="doc-view" id="view-doc">
+                <h2 style="font-size: 1.2rem; margin-bottom: 6px;">Document OCR & Structuring Pipeline</h2>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">Upload scanned documents or photos of printed text for PaddleOCR extraction and LLM field structuring.</p>
+
+                <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                    <button class="action-btn" id="mode-fast" onclick="selectDocMode('fast')" style="flex:1; padding: 10px; border-color: var(--accent-blue); color: var(--accent-blue);">⚡ Fast CPU Mode (PaddleOCR + Qwen3)</button>
+                    <button class="action-btn" id="mode-vlm" onclick="selectDocMode('vlm')" style="flex:1; padding: 10px;">👁️ Direct VLM Mode (Gemma3 4B)</button>
+                </div>
+
+                <div class="upload-area" onclick="document.getElementById('file-input').click()">
+                    <div style="font-size: 1.8rem; margin-bottom: 6px;">📄</div>
+                    <div style="font-size: 0.9rem; font-weight: 600;">Click to upload document image</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">Supports PNG, JPG, JPEG</div>
+                    <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="handleDocFileSelect(event)">
+                    <img id="img-preview" class="preview-img" style="display: none;" />
+                </div>
+
+                <button class="btn-send" id="btn-analyze-doc" onclick="runDocAnalysis()" style="width: 100%; height: 44px;" disabled>Run Document Analysis</button>
+
+                <div id="doc-results" style="display: none; margin-top: 20px;">
+                    <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                        <div style="background: var(--bg-secondary); padding: 10px; border-radius: 6px; flex:1;">
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">LATENCY</div>
+                            <div style="font-size: 1rem; font-weight: 700;" id="doc-val-latency">--</div>
+                        </div>
+                        <div style="background: var(--bg-secondary); padding: 10px; border-radius: 6px; flex:1;">
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">OCR CONFIDENCE</div>
+                            <div style="font-size: 1rem; font-weight: 700; color: var(--accent-green);" id="doc-val-conf">--</div>
+                        </div>
+                    </div>
+
+                    <table class="fields-table">
+                        <thead><tr><th>Field</th><th>Extracted Value</th></tr></thead>
+                        <tbody id="tbody-doc-fields"></tbody>
+                    </table>
+
+                    <button class="btn-deliverable" onclick="alert('📄 Deliverable Action Triggered:\n\nApproval Note generation ready for downstream backend tool integration (POST /generate_doc).')">
+                        📄 Generate Approval Note (.docx)
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+
+            <!-- Model Router -->
+            <div class="side-card">
+                <div class="side-card-title">MODEL ROUTER</div>
+                <table class="info-table">
+                    <tr><td>Task</td><td id="router-task-val">General Reasoning</td></tr>
+                    <tr><td>Selected Model</td><td id="router-model-val">Qwen3 4B</td></tr>
+                    <tr><td>Inference</td><td>Ollama</td></tr>
+                    <tr><td>Execution</td><td>LOCAL CPU</td></tr>
+                </table>
+                <div style="margin-top: 14px; font-size: 0.75rem; color: var(--text-secondary); border-top: 1px solid var(--border-color); padding-top: 10px;">
+                    <strong>Model Registry Mapping:</strong><br>
+                    • Reasoning &rarr; Qwen3 4B<br>
+                    • Coding &rarr; Qwen3-Coder 7B<br>
+                    • Vision &rarr; Gemma3 4B<br>
+                    • OCR &rarr; PaddleOCR v4
+                </div>
+            </div>
+
+            <!-- Agentic Pipeline Stages -->
+            <div class="side-card" id="pipeline-card">
+                <div class="side-card-title">AGENTIC PIPELINE</div>
+                <div class="status-list" id="pipeline-steps">
+                    <div class="status-row"><span>1. Request Received</span><span style="color:var(--accent-green)">✓</span></div>
+                    <div class="status-row"><span>2. Router Node Selection</span><span style="color:var(--accent-green)" id="pipe-router">✓ Qwen3 4B</span></div>
+                    <div class="status-row"><span>3. Specialist Execution</span><span style="color:var(--accent-green)" id="pipe-agent">✓ General Agent</span></div>
+                    <div class="status-row"><span>4. Verification Check</span><span style="color:var(--accent-green)" id="pipe-verify">✓ PASS</span></div>
+                    <div class="status-row"><span>5. Output Delivery</span><span style="color:var(--accent-green)">✓ Local Deliverable</span></div>
+                </div>
+            </div>
+
+            <!-- Security & System Status -->
+            <div class="side-card">
+                <div class="side-card-title">LOCAL EXECUTION STATUS</div>
+                <div class="status-list">
+                    <div class="status-row">
+                        <span>Ollama Engine</span>
+                        <span><span class="dot green"></span> localhost:11434</span>
+                    </div>
+                    <div class="status-row">
+                        <span>Inference API (8001)</span>
+                        <span><span class="dot green" id="dot-8001"></span> <strong id="txt-8001">Checking...</strong></span>
+                    </div>
+                    <div class="status-row">
+                        <span>Multimodal API (8002)</span>
+                        <span><span class="dot green" id="dot-8002"></span> <strong id="txt-8002">Checking...</strong></span>
+                    </div>
+                    <div class="status-row">
+                        <span>External AI APIs</span>
+                        <span style="color: var(--accent-green); font-weight: 700;">NONE (0 Cloud)</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        // Configurable Inference & Multimodal API base URLs
+        const INFERENCE_API = "http://localhost:8001";
+        const MULTIMODAL_API = "http://localhost:8002";
+
+        // Conversation History state array
+        let conversationHistory = [
+            {
+                role: "assistant",
+                content: "Hello! I am your Sovereign AI Assistant running 100% locally on this machine via Ollama. Ask me anything, or attach a document/image for analysis."
+            }
+        ];
+
+        let selectedDocFile = null;
+        let selectedDocMode = 'fast';
+
+        // Check Health with automatic fallback to proxy if cross-port fetch is blocked
+        async function checkHealth() {
+            let infOk = false;
+            try {
+                const r1 = await fetch(`${INFERENCE_API}/health`, { mode: 'cors' });
+                const d1 = await r1.json();
+                infOk = (d1.status === 'ok');
+            } catch (e) {
+                // Fallback attempt via relative path or backend check
+                try {
+                    const r1 = await fetch('/generate', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({model_id: 'qwen3:4b-instruct-2507-q4_K_M', messages: [{role: 'user', content: 'ping'}]}) });
+                    infOk = r1.ok;
+                } catch(e2) { infOk = false; }
+            }
+
+            document.getElementById('txt-8001').innerText = infOk ? 'ONLINE' : 'OFFLINE';
+            document.getElementById('txt-8001').style.color = infOk ? '#22c55e' : '#ef4444';
+            document.getElementById('dot-8001').className = infOk ? 'dot green' : 'dot red';
+
+            let mmOk = false;
+            try {
+                const r2 = await fetch('/health');
+                const d2 = await r2.json();
+                mmOk = (d2.status === 'ok');
+            } catch (e) { mmOk = false; }
+
+            document.getElementById('txt-8002').innerText = mmOk ? 'ONLINE' : 'OFFLINE';
+            document.getElementById('txt-8002').style.color = mmOk ? '#22c55e' : '#ef4444';
+            document.getElementById('dot-8002').className = mmOk ? 'dot green' : 'dot red';
+        }
+
+        function switchMainTab(t) {
+            document.getElementById('tab-btn-chat').classList.toggle('active', t === 'chat');
+            document.getElementById('tab-btn-doc').classList.toggle('active', t === 'doc');
+
+            document.getElementById('view-chat').style.display = t === 'chat' ? 'flex' : 'none';
+            document.getElementById('view-doc').style.display = t === 'doc' ? 'block' : 'none';
+        }
+
+        let attachedChatDoc = null;
+
+        function triggerChatFileSelect(acceptType) {
+            const fileInput = document.getElementById('chat-file-input');
+            fileInput.accept = acceptType;
+            fileInput.click();
+        }
+
+        async function handleChatFileAttached(evt) {
+            const file = evt.target.files[0];
+            if (!file) return;
+
+            const badge = document.getElementById('chat-attach-badge');
+            const nameSpan = document.getElementById('chat-attach-name');
+
+            badge.style.display = 'flex';
+            nameSpan.innerText = `⏳ Reading ${file.name}...`;
+
+            if (file.type.startsWith('image/')) {
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    const res = await fetch(`${MULTIMODAL_API}/analyze?mode=fast`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await res.json();
+                    const extractedText = data.ocr_text || JSON.stringify(data.structured_fields || {});
+                    attachedChatDoc = {
+                        name: file.name,
+                        content: extractedText
+                    };
+                    nameSpan.innerText = `🖼️ ${file.name} (OCR Extracted)`;
+                } catch (err) {
+                    alert('Failed to process image attachment: ' + err);
+                    clearChatAttachment();
+                }
+            } else {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    attachedChatDoc = {
+                        name: file.name,
+                        content: e.target.result
+                    };
+                    const kbSize = (file.size / 1024).toFixed(1);
+                    nameSpan.innerText = `📎 ${file.name} (${kbSize} KB)`;
+                };
+                reader.onerror = (err) => {
+                    alert('Failed to read file: ' + err);
+                    clearChatAttachment();
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function clearChatAttachment() {
+            attachedChatDoc = null;
+            document.getElementById('chat-attach-badge').style.display = 'none';
+            document.getElementById('chat-file-input').value = '';
+        }
+
+        function handleChatKey(evt) {
+            if (evt.key === 'Enter' && !evt.shiftKey) {
+                evt.preventDefault();
+                sendChatMessage();
+            }
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text && !attachedChatDoc) return;
+
+            const userPromptText = text || `Please analyze the attached document: ${attachedChatDoc ? attachedChatDoc.name : ''}`;
+
+            // Append User Message to UI & State
+            appendMessage('user', userPromptText);
+            conversationHistory.push({ role: "user", content: userPromptText });
+            input.value = '';
+
+            // Update Pipeline Card step 2
+            if (attachedChatDoc) {
+                document.getElementById('pipe-router').innerText = `✓ RAG Context (${attachedChatDoc.name})`;
+            } else {
+                document.getElementById('pipe-router').innerText = `✓ Qwen3 4B`;
+            }
+
+            // Prepare Payload with optional RAG Context
+            let payloadContext = null;
+            if (attachedChatDoc) {
+                payloadContext = {
+                    source: "local_rag",
+                    documents: [
+                        {
+                            document: attachedChatDoc.name,
+                            page: 1,
+                            content: attachedChatDoc.content
+                        }
+                    ]
+                };
+            }
+
+            const payload = {
+                model_id: "qwen3:4b-instruct-2507-q4_K_M",
+                messages: conversationHistory,
+                config: { temperature: 0.2, max_tokens: 1024 }
+            };
+
+            if (payloadContext) {
+                payload.context = payloadContext;
+            }
+
+            // Clear attachment badge after capturing payload
+            clearChatAttachment();
+
+            // Show Thinking Indicator
+            const thinking = document.getElementById('thinking-indicator');
+            thinking.style.display = 'block';
+
+            const startTime = Date.now();
+
+            try {
+                // Try fetching INFERENCE_API first, fallback to proxy /generate
+                let res;
+                try {
+                    res = await fetch(`${INFERENCE_API}/generate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } catch (corsErr) {
+                    res = await fetch('/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }
+
+                const data = await res.json();
+                const latencySec = ((Date.now() - startTime) / 1000).toFixed(2);
+
+                const assistantReply = data.response || "No response received";
+                conversationHistory.push({ role: "assistant", content: assistantReply });
+
+                appendMessage('assistant', assistantReply, latencySec, data.sources);
+
+            } catch (err) {
+                appendMessage('assistant', `Error connecting to inference service: ${err}`);
+            } finally {
+                thinking.style.display = 'none';
+            }
+        }
+
+        function appendMessage(role, content, latencySec = null, sources = null) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `msg-bubble ${role}`;
+
+            let html = content.replace(/\n/g, '<br>');
+
+            if (role === 'assistant') {
+                let metaText = `<span>Engine: Qwen3 4B</span>`;
+                if (latencySec) metaText += `<span>⏱️ Latency: ${latencySec}s</span>`;
+                html += `<div class="msg-meta">${metaText}</div>`;
+
+                if (sources && sources.length > 0) {
+                    let srcHtml = `<div class="sources-card"><div class="sources-title">📄 Context Sources:</div>`;
+                    sources.forEach(s => {
+                        const pageText = s.page !== null && s.page !== undefined ? ` — Page ${s.page}` : '';
+                        srcHtml += `<div class="source-item">📄 ${s.document}${pageText}</div>`;
+                    });
+                    srcHtml += `</div>`;
+                    html += srcHtml;
+                }
+            }
+
+            div.innerHTML = html;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Document Analysis handlers
+        function selectDocMode(m) {
+            selectedDocMode = m;
+            document.getElementById('mode-fast').style.color = m === 'fast' ? 'var(--accent-blue)' : 'var(--text-secondary)';
+            document.getElementById('mode-vlm').style.color = m === 'vlm' ? 'var(--accent-blue)' : 'var(--text-secondary)';
+        }
+
+        function handleDocFileSelect(evt) {
+            const file = evt.target.files[0];
+            if (file) {
+                selectedDocFile = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.getElementById('img-preview');
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+                document.getElementById('btn-analyze-doc').disabled = false;
+            }
+        }
+
+        async function runDocAnalysis() {
+            if (!selectedDocFile) return;
+            const btn = document.getElementById('btn-analyze-doc');
+            btn.disabled = true;
+
+            const startTime = Date.now();
+            const formData = new FormData();
+            formData.append('file', selectedDocFile);
+
+            try {
+                const res = await fetch(`${MULTIMODAL_API}/analyze?mode=${selectedDocMode}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                const latencySec = ((Date.now() - startTime) / 1000).toFixed(2);
+
+                document.getElementById('doc-results').style.display = 'block';
+                document.getElementById('doc-val-latency').innerText = `${latencySec} s`;
+                document.getElementById('doc-val-conf').innerText = `${(data.ocr_avg_confidence * 100).toFixed(1)}%`;
+
+                const tbody = document.getElementById('tbody-doc-fields');
+                tbody.innerHTML = '';
+                for (const [k, v] of Object.entries(data.structured_fields || {})) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${k}</td><td>${typeof v === 'object' ? JSON.stringify(v) : v}</td>`;
+                    tbody.appendChild(tr);
+                }
+
+            } catch (err) {
+                alert("Document analysis failed: " + err);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        checkHealth();
+        setInterval(checkHealth, 5000);
+    </script>
+</body>
+</html>
