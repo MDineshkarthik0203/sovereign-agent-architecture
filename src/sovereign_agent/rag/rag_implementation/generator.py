@@ -1,18 +1,9 @@
-from langchain_openai import ChatOpenAI
-
-from .config import (
-    OPENAI_API_KEY,
-    OPENAI_CHAT_MODEL
-)
+from sovereign_agent.inference_client import LocalLLM
 
 
 def get_llm():
 
-    return ChatOpenAI(
-        model=OPENAI_CHAT_MODEL,
-        temperature=0,
-        api_key=OPENAI_API_KEY
-    )
+    return LocalLLM()
 
 
 def generate_answer(

@@ -16,6 +16,9 @@ class AgentState(TypedDict):
     rag_evidence: list
     observations:list[str]
 
+    file_path: str
+    image_path: str
+
     verification:str
     verification_status:bool
     retry_count:int

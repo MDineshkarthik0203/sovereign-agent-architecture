@@ -9,7 +9,7 @@ load_dotenv()
 # OPENAI
 # =========================
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "dummy-local-key")
 
 OPENAI_CHAT_MODEL = "gpt-4o-mini"
 

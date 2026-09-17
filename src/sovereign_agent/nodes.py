@@ -1,6 +1,8 @@
+import os
+import httpx
 from dotenv import load_dotenv
-from langchain_groq import ChatGroq
 
+from sovereign_agent.inference_client import LocalLLM
 from sovereign_agent.state import AgentState
 from sovereign_agent.rag.rag_implementation.rag import ask_rag
 
@@ -12,10 +14,7 @@ load_dotenv()
 # ============================================================
 
 def get_llm():
-    return ChatGroq(
-        model="openai/gpt-oss-20b",
-        temperature=0
-    )
+    return LocalLLM()
 
 
 # ============================================================
@@ -397,6 +396,44 @@ Show:
 def vision_agent(state: AgentState):
 
     question = state["question"]
+    file_path = state.get("file_path") or state.get("image_path")
+
+    if file_path and os.path.exists(file_path):
+        try:
+            multimodal_url = os.getenv("MULTIMODAL_SERVICE_URL", "http://localhost:8002/analyze?mode=fast")
+            with open(file_path, "rb") as f:
+                response = httpx.post(
+                    multimodal_url,
+                    files={"file": (os.path.basename(file_path), f)},
+                    timeout=300
+                )
+            response.raise_for_status()
+            data = response.json()
+
+            ocr_text = data.get("ocr_text", "")
+            confidence = data.get("confidence", 0)
+            fields = data.get("structured_fields", {})
+            fields_str = "\n".join([f"- {k}: {v}" for k, v in fields.items()]) if fields else "None"
+
+            content = (
+                f"### Multimodal Document Analysis Result\n"
+                f"**File**: {os.path.basename(file_path)}\n"
+                f"**OCR Confidence**: {confidence}%\n\n"
+                f"**Extracted Key Fields**:\n{fields_str}\n\n"
+                f"**Extracted Text / OCR Summary**:\n{ocr_text[:1500]}"
+            )
+
+            return {
+                "agent_result": content,
+                "observations": state["observations"] + [
+                    f"Vision Agent processed image/document {os.path.basename(file_path)} via local Multimodal Service (OCR confidence: {confidence}%)."
+                ],
+                "execution_history": state["execution_history"] + [
+                    "Vision Agent executed local OCR & visual analysis workflow."
+                ]
+            }
+        except Exception as e:
+            content = f"Error during local visual processing: {str(e)}"
 
     llm = get_llm()
 
@@ -406,9 +443,7 @@ You are the Vision Agent in a Sovereign Agentic AI Workbench.
 User request:
 {question}
 
-The system may later provide images or scanned documents.
-
-For this prototype, explain how the visual task should be handled.
+Provide a detailed response for handling this visual request using the local Gemma3/Qwen3 vision pipeline.
 """
 
     response = llm.invoke(prompt)
