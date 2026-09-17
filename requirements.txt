@@ -5,3 +5,16 @@ pydantic
 python-dotenv 
 fastapi 
 uvicorn
+pypdf
+reportlab
+langchain
+langchain-chroma
+langchain-text-splitters
+chromadb
+sentence-transformers
+huggingface-hub
+pymupdf
+requests
+beautifulsoup4
+ddgs
+langchain-openai

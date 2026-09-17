@@ -1,6 +1,19 @@
-venv/
+# Virtual environment
 .venv/
+venv/
+
+# Environment variables
 .env
+
+# Python cache
 __pycache__/
 *.pyc
-*.egg-info/
+
+# IDE
+.vscode/
+
+# RAG generated database
+chroma_db/
+
+# Temporary files
+*.tmp

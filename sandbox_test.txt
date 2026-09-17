@@ -1,0 +1,7 @@
+Sovereign Agentic AI Workbench
+
+Project Status: Development
+
+The project is designed for confidential industrial document processing.
+
+The system uses local AI models, RAG, agents, and sandbox tools.
