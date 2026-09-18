@@ -22,6 +22,8 @@ export interface AgentExecutionState {
   verification_status: boolean;
   retry_count: number;
   final_answer: string;
+  web_permission_granted?: boolean;
+  needs_web_permission?: boolean;
   elapsed_seconds?: number;
 }
 

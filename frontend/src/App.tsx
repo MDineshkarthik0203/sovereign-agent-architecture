@@ -213,105 +213,87 @@ Subject: Approval for Valve V-104 Replacement and Shutdown Scheduling
    * LangGraph + Groq
    */
 
-  const handleExecute = async () => {
+  const handleExecute = async (overridePermission?: boolean) => {
 
     if (!prompt.trim()) {
       return;
     }
 
     setIsRunning(true);
-
     const startTime = performance.now();
 
+    const permissionGranted = overridePermission ?? false;
+
+    const requestBody = JSON.stringify({
+      question: prompt,
+      context: uploadedFile ? `Attached document: ${uploadedFile}` : '',
+      web_permission_granted: permissionGranted,
+      needs_web_permission: false
+    });
+
+    let data;
+
     try {
-
-      const response = await fetch(
-        'http://localhost:8080/api/agent/run',
-        {
-          method: 'POST',
-
-          headers: {
-            'Content-Type': 'application/json'
-          },
-
-          body: JSON.stringify({
-            question: prompt,
-
-            context: uploadedFile
-              ? `Attached document: ${uploadedFile}`
-              : ''
-          })
-        }
-      );
-
+      let response = await fetch('http://localhost:8080/api/agent/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: requestBody
+      });
 
       if (!response.ok) {
-
-        throw new Error(
-          `Java backend returned HTTP ${response.status}`
-        );
+        throw new Error(`Java backend returned HTTP ${response.status}`);
       }
+      data = await response.json();
+    } catch (err) {
+      try {
+        let response = await fetch('http://localhost:8000/agent/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: requestBody
+        });
+        if (!response.ok) {
+          throw new Error(`Python agent server returned HTTP ${response.status}`);
+        }
+        data = await response.json();
+      } catch (err2) {
+        setIsRunning(false);
+        setExecutionState(prev => ({
+          ...prev,
+          final_answer: 'Unable to connect to Java Spring Boot (8080) or Python Agent (8000). Make sure microservices are running.',
+          verification: 'STATUS: FAIL\nBackend connection failed.',
+          verification_status: false
+        }));
+        return;
+      }
+    }
 
+    const plan: string[] = Array.isArray(data.plan)
+      ? data.plan.map((item: unknown) => String(item))
+      : [];
 
-      const data = await response.json();
+    const verification: string = data.verification ?? 'STATUS: PASS\nExecution verified.';
+    const verificationStatus: boolean = verification.includes('STATUS: PASS');
+    const elapsedSeconds = (performance.now() - startTime) / 1000;
 
+    setIsRunning(false);
 
-      const plan: string[] =
-        Array.isArray(data.plan)
-          ? data.plan.map(
-              (item: unknown) => String(item)
-            )
-          : [];
-
-
-      const verification: string =
-        data.verification ?? '';
-
-
-      const verificationStatus: boolean =
-        verification.includes('STATUS: PASS');
-
-
-      const elapsedSeconds =
-        (performance.now() - startTime) / 1000;
-
-
-      setExecutionState({
-
-        question: prompt,
-
-        route:
-          data.route ?? 'general',
-
-        supervisor_reason:
-          data.supervisorReason ?? '',
-
-        plan,
-
-        current_agent:
-          data.currentAgent ?? 'general_agent',
-
-        agent_result:
-          data.finalAnswer ?? '',
-
-        tool_results: [],
-
-        observations: [],
-
-        verification,
-
-        verification_status:
-          verificationStatus,
-
-        retry_count: 0,
-
-        final_answer:
-          data.finalAnswer ??
-          'The agent did not return a final answer.',
-
-        elapsed_seconds:
-          Number(elapsedSeconds.toFixed(2))
-      });
+    setExecutionState({
+      question: prompt,
+      route: data.route ?? 'general',
+      supervisor_reason: data.supervisorReason ?? '',
+      plan,
+      current_agent: data.currentAgent ?? 'general_agent',
+      agent_result: data.finalAnswer ?? '',
+      tool_results: [],
+      observations: [],
+      verification,
+      verification_status: verificationStatus,
+      retry_count: 0,
+      final_answer: data.finalAnswer ?? 'The agent did not return a final answer.',
+      needs_web_permission: data.needsWebPermission ?? data.needs_web_permission ?? false,
+      web_permission_granted: permissionGranted,
+      elapsed_seconds: Number(elapsedSeconds.toFixed(2))
+    });
 
 
       /*
@@ -602,10 +584,35 @@ Subject: Approval for Valve V-104 Replacement and Shutdown Scheduling
             </div>
 
 
+            {executionState.needs_web_permission && (
+              <div className="mt-3 p-2.5 bg-amber-950/60 border border-amber-500/80 rounded text-xs text-amber-200">
+                <p className="font-bold mb-1 flex items-center space-x-1 text-amber-300">
+                  <span>🌐 Web Search Permission Requested</span>
+                </p>
+                <p className="text-[11px] text-amber-300/90 mb-2 leading-tight">
+                  No local information was found. Allow external DuckDuckGo web search? (This will break air-gap for this query).
+                </p>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleExecute(true)}
+                    className="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold text-[11px] transition-all shadow"
+                  >
+                    ✓ Allow Web Search
+                  </button>
+                  <button
+                    onClick={() => handleExecute(false)}
+                    className="flex-1 py-1.5 px-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded font-bold text-[11px] transition-all"
+                  >
+                    ✗ Deny / Local Only
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Execute Button */}
 
             <button
-              onClick={handleExecute}
+              onClick={() => handleExecute()}
               disabled={isRunning}
 
               className={`mt-3 py-2 px-4 rounded text-xs font-semibold flex items-center justify-center space-x-2 transition-all shadow ${

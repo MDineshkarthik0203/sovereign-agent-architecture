@@ -1,3 +1,7 @@
+import sys
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+
 from sovereign_agent.graph import app
 
 
