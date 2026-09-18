@@ -17,3 +17,8 @@ chroma_db/
 
 # Temporary files
 *.tmp
+# Java / Maven
+backend/target/
+backend/uploads/
+*.class
+
