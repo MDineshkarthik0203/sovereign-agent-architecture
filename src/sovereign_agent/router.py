@@ -103,7 +103,20 @@ def router(state: AgentState):
                 "read document",
                 "read the document",
                 "summarize file",
-                "summarize the file"
+                "summarize the file",
+                "summarize document",
+                "summarize report",
+                "document",
+                "report",
+                "knowledge base",
+                "search",
+                "lookup",
+                "info",
+                "information",
+                "what is",
+                "who is",
+                "where is",
+                "latest"
             ]
         )
         or (

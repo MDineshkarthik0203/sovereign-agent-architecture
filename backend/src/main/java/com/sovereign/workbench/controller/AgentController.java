@@ -31,7 +31,9 @@ public class AgentController {
         AgentResponse response =
                 agentService.run(
                         request.getQuestion(),
-                        request.getContext()
+                        request.getContext(),
+                        request.getWebPermissionGranted(),
+                        request.getNeedsWebPermission()
                 );
 
         return ResponseEntity.ok(response);

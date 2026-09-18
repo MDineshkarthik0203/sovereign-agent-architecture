@@ -23,12 +23,16 @@ public class AgentClient {
 
     public AgentResponse runAgent(
             String question,
-            String context) {
+            String context,
+            Boolean webPermissionGranted,
+            Boolean needsWebPermission) {
 
         AgentRequest request =
                 new AgentRequest(
                         question,
-                        context
+                        context,
+                        webPermissionGranted,
+                        needsWebPermission
                 );
 
         return restClient.post()

@@ -217,94 +217,96 @@ Generate the content now.
     # NORMAL DOCUMENT QUESTION → RAG
     # ============================================================
 
+    web_permission_granted = state.get("web_permission_granted", False)
+    needs_web_permission = state.get("needs_web_permission", False)
+
     result = ask_rag(
         question,
-        allow_web_fallback=True
+        web_permission_granted=web_permission_granted,
+        needs_web_permission=needs_web_permission
     )
 
+    if result["status"] == "needs_permission":
+        tool_results.append("RAG Status: MISSING LOCAL KNOWLEDGE - AWAITING USER PERMISSION")
+        observations.append("Local knowledge base search yielded no results. Requesting explicit user permission for external web search.")
+        return {
+            "agent_result": result["answer"],
+            "tool_results": tool_results,
+            "observations": observations,
+            "needs_web_permission": True,
+            "web_permission_granted": False,
+            "execution_history": state["execution_history"] + [
+                "Document Agent paused execution to request user permission for external web search."
+            ]
+        }
 
-    if result["source"] == "local":
+    elif result["status"] == "permission_denied":
+        tool_results.append("RAG Status: MISSING LOCAL KNOWLEDGE - PERMISSION DENIED")
+        observations.append("Local knowledge base search yielded no results. External web search was not permitted by user; no external requests were made.")
+        return {
+            "agent_result": result["answer"],
+            "tool_results": tool_results,
+            "observations": observations,
+            "needs_web_permission": False,
+            "web_permission_granted": False,
+            "execution_history": state["execution_history"] + [
+                "Document Agent completed execution without external search (user permission not granted)."
+            ]
+        }
 
+    elif result["source"] == "local":
         content = result["answer"]
+        evidence = result.get("evidence", [])
 
-        evidence = result.get(
-            "evidence",
-            []
-        )
+        tool_results.append("RAG Status: SUCCESS")
+        tool_results.append(f"RAG Evidence: {evidence}")
 
-        tool_results.append(
-            "RAG Status: SUCCESS"
-        )
+        observations.append("Document Agent used the local RAG knowledge base.")
 
-        tool_results.append(
-            f"RAG Evidence: {evidence}"
-        )
-
-        observations.append(
-            "Document Agent used the local RAG knowledge base."
-        )
-
+        return {
+            "agent_result": content,
+            "tool_results": tool_results,
+            "observations": observations,
+            "needs_web_permission": False,
+            "execution_history": state["execution_history"] + [
+                "Document Agent executed the RAG workflow using local knowledge."
+            ]
+        }
 
     elif result["source"] == "web":
+        content = result["answer"]
+        web_results = result.get("web_results", [])
 
-        web_results = result.get(
-            "web_results",
-            []
-        )
+        tool_results.append("RAG Status: SUCCESS (WEB SEARCH FALLBACK)")
+        tool_results.append(f"Web Evidence: {web_results}")
 
-        web_context = "\n\n".join(
-            [
-                f"Title: {item.get('title', '')}\n"
-                f"URL: {item.get('url', '')}\n"
-                f"Content: {item.get('content', '')}"
-                for item in web_results
+        observations.append("EXTERNAL NETWORK EVENT: Document Agent executed web search fallback with explicit user permission. Source: web search (user-approved), not local knowledge base.")
+
+        return {
+            "agent_result": content,
+            "tool_results": tool_results,
+            "observations": observations,
+            "needs_web_permission": False,
+            "web_permission_granted": True,
+            "execution_history": state["execution_history"] + [
+                f"EXTERNAL NETWORK EVENT: Web search invoked for query '{question}' with explicit user permission."
             ]
-        )
-
-        content = (
-            "The requested information was not found "
-            "in the local knowledge base.\n\n"
-            "External web evidence:\n\n"
-            f"{web_context}"
-        )
-
-        tool_results.append(
-            "RAG Status: LOCAL KNOWLEDGE NOT FOUND"
-        )
-
-        tool_results.append(
-            f"Web Evidence: {web_results}"
-        )
-
-        observations.append(
-            "Document Agent used web search."
-        )
-
+        }
 
     else:
-
         content = result["answer"]
+        tool_results.append("RAG Status: NO EVIDENCE FOUND")
+        observations.append("Document Agent could not find sufficient information.")
 
-        tool_results.append(
-            "RAG Status: NO EVIDENCE FOUND"
-        )
-
-        observations.append(
-            "Document Agent could not find sufficient information."
-        )
-
-
-    return {
-        "agent_result": content,
-
-        "tool_results": tool_results,
-
-        "observations": observations,
-
-        "execution_history": state["execution_history"] + [
-            "Document Agent executed the RAG workflow."
-        ]
-    }
+        return {
+            "agent_result": content,
+            "tool_results": tool_results,
+            "observations": observations,
+            "needs_web_permission": False,
+            "execution_history": state["execution_history"] + [
+                "Document Agent completed execution (no evidence found)."
+            ]
+        }
 
 def document_processor(state: AgentState):
 
@@ -508,6 +510,34 @@ def verify_agent(state: AgentState):
     agent_result = state["agent_result"]
 
     tool_results = state["tool_results"]
+
+    # ============================================================
+    # 0. WEB PERMISSION CHECKS
+    # ============================================================
+
+    if state.get("needs_web_permission", False) or any("AWAITING USER PERMISSION" in res for res in tool_results):
+        return {
+            "verification": (
+                "STATUS: PASS\n"
+                "Reason: Paused execution to request user permission for external web search."
+            ),
+            "verification_status": True,
+            "execution_history": state["execution_history"] + [
+                "Verification Agent confirmed graph pause for web permission."
+            ]
+        }
+
+    if any("PERMISSION DENIED" in res for res in tool_results):
+        return {
+            "verification": (
+                "STATUS: PASS\n"
+                "Reason: Local knowledge missing and external web search was not permitted."
+            ),
+            "verification_status": True,
+            "execution_history": state["execution_history"] + [
+                "Verification Agent confirmed completion without web search (permission denied)."
+            ]
+        }
 
 
     # ============================================================

@@ -19,6 +19,9 @@ class AgentState(TypedDict):
     file_path: str
     image_path: str
 
+    web_permission_granted: bool
+    needs_web_permission: bool
+
     verification:str
     verification_status:bool
     retry_count:int

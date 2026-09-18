@@ -15,7 +15,8 @@ print(query)
 
 result = ask_rag(
     query,
-    allow_web_fallback=False
+    web_permission_granted=False,
+    needs_web_permission=False
 )
 
 

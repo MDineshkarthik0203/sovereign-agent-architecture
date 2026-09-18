@@ -16,11 +16,15 @@ public class AgentService {
 
     public AgentResponse run(
             String question,
-            String context) {
+            String context,
+            Boolean webPermissionGranted,
+            Boolean needsWebPermission) {
 
         return agentClient.runAgent(
                 question,
-                context
+                context,
+                webPermissionGranted,
+                needsWebPermission
         );
     }
 }

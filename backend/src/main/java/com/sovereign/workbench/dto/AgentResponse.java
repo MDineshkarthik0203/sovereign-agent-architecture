@@ -9,6 +9,8 @@ public class AgentResponse {
     private Object plan;
     private String verification;
     private String finalAnswer;
+    private boolean needsWebPermission;
+    private boolean webPermissionGranted;
 
     public AgentResponse() {
     }
@@ -67,5 +69,21 @@ public class AgentResponse {
 
     public void setFinalAnswer(String finalAnswer) {
         this.finalAnswer = finalAnswer;
+    }
+
+    public boolean isNeedsWebPermission() {
+        return needsWebPermission;
+    }
+
+    public void setNeedsWebPermission(boolean needsWebPermission) {
+        this.needsWebPermission = needsWebPermission;
+    }
+
+    public boolean isWebPermissionGranted() {
+        return webPermissionGranted;
+    }
+
+    public void setWebPermissionGranted(boolean webPermissionGranted) {
+        this.webPermissionGranted = webPermissionGranted;
     }
 }
