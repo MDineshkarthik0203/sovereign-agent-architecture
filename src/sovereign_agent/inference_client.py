@@ -4,7 +4,7 @@ import httpx
 
 INFERENCE_SERVICE_URL = os.getenv(
     "INFERENCE_SERVICE_URL",
-    "http://localhost:8001/generate"
+    "http://172.16.216.12:8001/generate"
 )
 
 DEFAULT_MODEL = os.getenv(

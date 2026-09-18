@@ -9,6 +9,14 @@ export interface LocalModelInfo {
   engine: string;
 }
 
+export interface RagEvidenceItem {
+  text?: string;
+  content?: string;
+  source?: string;
+  page?: number | string;
+  score?: number;
+}
+
 export interface AgentExecutionState {
   question: string;
   route: AgentRoute;
@@ -23,6 +31,10 @@ export interface AgentExecutionState {
   retry_count: number;
   final_answer: string;
   elapsed_seconds?: number;
+  execution_history?: string[];
+  document_content?: string;
+  rag_query?: string;
+  rag_evidence?: RagEvidenceItem[];
 }
 
 export interface SystemStatus {
@@ -42,4 +54,58 @@ export interface DeliverableFile {
   size: string;
   agentSource: string;
   content: string;
+}
+
+export interface SandboxTool {
+  name: string;
+  description: string;
+  requiredArgs: string[];
+  optionalArgs?: string[];
+}
+
+export interface SandboxExecutionResult {
+  status: 'success' | 'failed' | 'timeout' | 'blocked';
+  stdout?: string;
+  stderr?: string;
+  exit_code?: number;
+  execution_time?: number;
+  error?: string;
+  artifact_name?: string;
+}
+
+export interface SandboxState {
+  workspaceActive: boolean;
+  isolationMode: 'tempfs' | 'process_isolation';
+  timeoutSeconds: number;
+  zeroEgressPolicy: boolean;
+  registeredTools: string[];
+  recentExecutions: SandboxExecutionResult[];
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'assistant' | 'user';
+  content: string;
+  mode?: string;
+  engine?: string;
+  latencySec?: number | string;
+  sources?: { document: string; page?: number | string }[];
+  timestamp?: string;
+}
+
+export interface PipelineStep {
+  stepNumber: number;
+  title: string;
+  detail?: string;
+  status: 'pending' | 'active' | 'completed';
+}
+
+export type DocAnalysisMode = 'fast' | 'vlm';
+
+export interface DocAnalysisResult {
+  latency: string;
+  confidence: string;
+  fields: Record<string, any>;
+  ocrText?: string;
+  imagePreview?: string;
 }

@@ -1,24 +1,29 @@
-# Virtual environment
-.venv/
-venv/
-
-# Environment variables
+# Python & Environment
 .env
-
-# Python cache
+*.env
+venv/
+.venv/
+env/
 __pycache__/
+*.py[cod]
+*$py.class
 *.pyc
+chroma_db_new/
+.ipynb_checkpoints/
 
-# IDE
+# Node & Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+*.local
+
+# IDE & OS
 .vscode/
+.idea/
+.DS_Store
+Thumbs.db
 
-# RAG generated database
-chroma_db/
-
-# Temporary files
-*.tmp
 # Java / Maven
 backend/target/
 backend/uploads/
 *.class
-

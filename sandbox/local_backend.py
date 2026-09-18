@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from .execution_backend import ExecutionBackend
-from .runner import run_code
+from execution_backend import ExecutionBackend
+from runner import run_code
 
 
 class LocalPythonBackend(ExecutionBackend):

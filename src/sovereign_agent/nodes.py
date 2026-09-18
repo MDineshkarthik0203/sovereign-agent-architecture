@@ -400,7 +400,7 @@ def vision_agent(state: AgentState):
 
     if file_path and os.path.exists(file_path):
         try:
-            multimodal_url = os.getenv("MULTIMODAL_SERVICE_URL", "http://localhost:8002/analyze?mode=fast")
+            multimodal_url = os.getenv("MULTIMODAL_SERVICE_URL", "http://172.16.216.12:8002/analyze?mode=fast")
             with open(file_path, "rb") as f:
                 response = httpx.post(
                     multimodal_url,

@@ -1,4 +1,4 @@
-from .tool_registry import ToolRegistry
+from tool_registry import ToolRegistry
 
 
 class ToolDispatcher:

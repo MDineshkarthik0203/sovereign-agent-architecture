@@ -39,6 +39,11 @@ export const AirGapNetworkMonitor: React.FC<Props> = ({ status }) => {
           <span>ZERO TELEMETRY</span>
         </div>
 
+        <div className="flex items-center space-x-1.5 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded text-slate-300 font-medium text-[11px]">
+          <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping mr-0.5" />
+          <span>M5 SANDBOX: ACTIVE (5s LIMIT)</span>
+        </div>
+
         <div className="flex items-center space-x-1 text-slate-400 text-[11px]">
           <WifiOff className="w-3.5 h-3.5 text-rose-400" />
           <span>WAN Blocked (127.0.0.1 Loopback)</span>

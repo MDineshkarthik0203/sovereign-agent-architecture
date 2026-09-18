@@ -2,7 +2,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from .environment import build_environment
+from environment import build_environment
 
 def run_code(
     code: str,

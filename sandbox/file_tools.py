@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from .policy import SandboxPolicy
+from policy import SandboxPolicy
 
 
 class FileTools:
