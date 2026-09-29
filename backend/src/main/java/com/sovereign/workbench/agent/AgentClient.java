@@ -21,6 +21,14 @@ public class AgentClient {
                 .build();
     }
 
+    public AgentResponse runAgent(AgentRequest request) {
+        return restClient.post()
+                .uri("/agent/run")
+                .body(request)
+                .retrieve()
+                .body(AgentResponse.class);
+    }
+
     public AgentResponse runAgent(
             String question,
             String context) {
@@ -31,10 +39,6 @@ public class AgentClient {
                         context
                 );
 
-        return restClient.post()
-                .uri("/agent/run")
-                .body(request)
-                .retrieve()
-                .body(AgentResponse.class);
+        return runAgent(request);
     }
 }

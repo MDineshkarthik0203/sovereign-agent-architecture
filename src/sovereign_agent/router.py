@@ -152,7 +152,10 @@ def router(state: AgentState):
     # 5. VISION
     # ============================================================
 
-    if any(
+    fpath = str(state.get("file_path") or state.get("image_path") or "").lower()
+    is_vision_file = any(fpath.endswith(ext) for ext in [".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".pdf"])
+
+    if is_vision_file or any(
         word in question
         for word in [
             "image",

@@ -28,11 +28,7 @@ public class AgentController {
     public ResponseEntity<AgentResponse> runAgent(
             @Valid @RequestBody AgentRequest request) {
 
-        AgentResponse response =
-                agentService.run(
-                        request.getQuestion(),
-                        request.getContext()
-                );
+        AgentResponse response = agentService.run(request);
 
         return ResponseEntity.ok(response);
     }

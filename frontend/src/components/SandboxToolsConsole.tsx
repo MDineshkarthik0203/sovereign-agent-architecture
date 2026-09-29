@@ -15,6 +15,7 @@ import type { DeliverableFile, SandboxExecutionResult } from '../types/workbench
 
 interface Props {
   onArtifactGenerated?: (file: DeliverableFile) => void;
+  backendApiUrl?: string;
 }
 
 const SAMPLE_SCRIPTS = [
@@ -76,7 +77,7 @@ print(f"Successfully generated artifact: compliance_audit.txt ({len(report_conte
   }
 ];
 
-export const SandboxToolsConsole: React.FC<Props> = ({ onArtifactGenerated }) => {
+export const SandboxToolsConsole: React.FC<Props> = ({ onArtifactGenerated, backendApiUrl }) => {
   const [selectedScriptIdx, setSelectedScriptIdx] = useState<number>(0);
   const [code, setCode] = useState<string>(SAMPLE_SCRIPTS[0].code);
   const [isExecuting, setIsExecuting] = useState(false);
@@ -114,8 +115,9 @@ export const SandboxToolsConsole: React.FC<Props> = ({ onArtifactGenerated }) =>
     }
 
     // Try backend call if available or run simulated local sandbox execution
+    const effectiveBackendUrl = backendApiUrl || localStorage.getItem('sovereign_backend_api') || import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname || 'localhost'}:8000`;
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/sandbox/execute', {
+      const response = await fetch(`${effectiveBackendUrl}/api/sandbox/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code })

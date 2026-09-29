@@ -1,14 +1,30 @@
 package com.sovereign.workbench.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AgentResponse {
 
     private boolean success;
+    private String question;
     private String route;
     private String currentAgent;
     private String supervisorReason;
     private Object plan;
     private String verification;
     private String finalAnswer;
+
+    @JsonAlias({"needs_web_permission", "needsWebPermission"})
+    private Boolean needsWebPermission;
+
+    private String source;
+
+    @JsonAlias({"web_results", "webResults"})
+    private Object webResults;
+
+    @JsonAlias({"file_path", "filePath"})
+    private String filePath;
 
     public AgentResponse() {
     }
@@ -19,6 +35,14 @@ public class AgentResponse {
 
     public void setSuccess(boolean success) {
         this.success = success;
+    }
+
+    public String getQuestion() {
+        return question;
+    }
+
+    public void setQuestion(String question) {
+        this.question = question;
     }
 
     public String getRoute() {
@@ -67,5 +91,37 @@ public class AgentResponse {
 
     public void setFinalAnswer(String finalAnswer) {
         this.finalAnswer = finalAnswer;
+    }
+
+    public Boolean getNeedsWebPermission() {
+        return needsWebPermission;
+    }
+
+    public void setNeedsWebPermission(Boolean needsWebPermission) {
+        this.needsWebPermission = needsWebPermission;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
+    }
+
+    public Object getWebResults() {
+        return webResults;
+    }
+
+    public void setWebResults(Object webResults) {
+        this.webResults = webResults;
+    }
+
+    public String getFilePath() {
+        return filePath;
+    }
+
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
     }
 }

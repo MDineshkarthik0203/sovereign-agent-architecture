@@ -214,95 +214,110 @@ Generate the content now.
 
 
     # ============================================================
-    # NORMAL DOCUMENT QUESTION → RAG
+    # NORMAL DOCUMENT QUESTION → RAG & PERMISSION CHECK
     # ============================================================
 
+    web_perm = state.get("web_permission_granted")
+
+    # Step A: Query local knowledge base without external web fallback
     result = ask_rag(
         question,
-        allow_web_fallback=True
+        allow_web_fallback=False
     )
 
-
-    if result["source"] == "local":
-
+    if result.get("status") == "success":
         content = result["answer"]
-
-        evidence = result.get(
-            "evidence",
-            []
-        )
-
-        tool_results.append(
-            "RAG Status: SUCCESS"
-        )
-
-        tool_results.append(
-            f"RAG Evidence: {evidence}"
-        )
-
-        observations.append(
-            "Document Agent used the local RAG knowledge base."
-        )
-
-
-    elif result["source"] == "web":
-
-        web_results = result.get(
-            "web_results",
-            []
-        )
-
-        web_context = "\n\n".join(
-            [
-                f"Title: {item.get('title', '')}\n"
-                f"URL: {item.get('url', '')}\n"
-                f"Content: {item.get('content', '')}"
-                for item in web_results
+        evidence = result.get("evidence", [])
+        tool_results.append("RAG Status: SUCCESS")
+        tool_results.append(f"RAG Evidence: {evidence}")
+        observations.append("Document Agent used the local RAG knowledge base.")
+        return {
+            "agent_result": content,
+            "tool_results": tool_results,
+            "observations": observations,
+            "source": "local",
+            "needs_web_permission": False,
+            "web_results": [],
+            "execution_history": state["execution_history"] + [
+                "Document Agent retrieved answer from local RAG (source: local)."
             ]
+        }
+
+    # Step B: Local knowledge base has nothing for this query!
+    # If user hasn't explicitly granted or denied web permission yet:
+    if web_perm is None:
+        prompt_text = "Couldn't find this locally. Search the web instead? (This sends your query outside the organization's network.)"
+        tool_results.append("RAG Status: LOCAL KNOWLEDGE NOT FOUND - AWAITING USER WEB PERMISSION")
+        observations.append("Document Agent requested external web search permission.")
+        return {
+            "agent_result": prompt_text,
+            "tool_results": tool_results,
+            "observations": observations,
+            "source": "none",
+            "needs_web_permission": True,
+            "web_results": [],
+            "execution_history": state["execution_history"] + [
+                "Document Agent flagged query as requiring web search authorization."
+            ]
+        }
+
+    # Step C: User granted web permission:
+    if web_perm is True:
+        web_res = ask_rag(
+            question,
+            allow_web_fallback=True
         )
+        web_results = web_res.get("web_results", [])
+        if web_results:
+            web_context = "\n\n".join([
+                f"Title: {item.get('title', '')}\nURL: {item.get('url', '')}\nContent: {item.get('content', '')}"
+                for item in web_results
+            ])
+            content = (
+                "The requested information was not found in the local knowledge base.\n\n"
+                "External web evidence:\n\n"
+                f"{web_context}"
+            )
+            tool_results.append("RAG Status: WEB SEARCH AUTHORIZED BY USER")
+            tool_results.append(f"Web Evidence: {web_results}")
+            observations.append("Document Agent performed authorized external web search.")
+            return {
+                "agent_result": content,
+                "tool_results": tool_results,
+                "observations": observations,
+                "source": "web",
+                "needs_web_permission": False,
+                "web_results": web_results,
+                "execution_history": state["execution_history"] + [
+                    "Document Agent executed authorized web search (source: web)."
+                ]
+            }
+        else:
+            return {
+                "agent_result": "The requested information was not found in either the local knowledge base or external web search.",
+                "tool_results": tool_results + ["RAG Status: NO WEB RESULTS FOUND"],
+                "observations": observations + ["Web search returned zero results."],
+                "source": "web",
+                "needs_web_permission": False,
+                "web_results": [],
+                "execution_history": state["execution_history"] + [
+                    "Document Agent completed web search with 0 matches."
+                ]
+            }
 
-        content = (
-            "The requested information was not found "
-            "in the local knowledge base.\n\n"
-            "External web evidence:\n\n"
-            f"{web_context}"
-        )
-
-        tool_results.append(
-            "RAG Status: LOCAL KNOWLEDGE NOT FOUND"
-        )
-
-        tool_results.append(
-            f"Web Evidence: {web_results}"
-        )
-
-        observations.append(
-            "Document Agent used web search."
-        )
-
-
-    else:
-
-        content = result["answer"]
-
-        tool_results.append(
-            "RAG Status: NO EVIDENCE FOUND"
-        )
-
-        observations.append(
-            "Document Agent could not find sufficient information."
-        )
-
-
+    # Step D: User denied web permission (stay strictly local air-gapped):
+    content = "The requested information was not found in the local knowledge base. External web search was denied by user to maintain strict air-gapped sovereign boundary."
+    tool_results.append("RAG Status: WEB SEARCH DENIED BY USER - MAINTAINING AIR-GAP")
+    observations.append("Document Agent remained strictly air-gapped per user instruction.")
     return {
         "agent_result": content,
-
         "tool_results": tool_results,
-
         "observations": observations,
-
+        "source": "local",
+        "needs_web_permission": False,
+        "web_results": [],
         "execution_history": state["execution_history"] + [
-            "Document Agent executed the RAG workflow."
+            "Document Agent halted external search per zero-egress user preference."
         ]
     }
 
@@ -509,6 +524,17 @@ def verify_agent(state: AgentState):
 
     tool_results = state["tool_results"]
 
+    if state.get("needs_web_permission"):
+        return {
+            "verification": (
+                "STATUS: PASS\n"
+                "Reason: Consent required for external web search."
+            ),
+            "verification_status": True,
+            "execution_history": state["execution_history"] + [
+                "Verification Agent verified web search consent request."
+            ]
+        }
 
     # ============================================================
     # 1. HARD FAILURE CHECKS
@@ -784,9 +810,10 @@ def deliver_agent(state: AgentState):
         final_answer = state["agent_result"]
 
     return {
-
         "final_answer": final_answer,
-
+        "needs_web_permission": state.get("needs_web_permission", False),
+        "source": state.get("source", "local"),
+        "web_results": state.get("web_results", []),
         "execution_history": state["execution_history"] + [
             "Deliver Agent prepared the final response."
         ]

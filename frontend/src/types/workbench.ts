@@ -82,6 +82,13 @@ export interface SandboxState {
   recentExecutions: SandboxExecutionResult[];
 }
 
+export interface WebResultItem {
+  title?: string;
+  url?: string;
+  content?: string;
+  snippet?: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: 'assistant' | 'user';
@@ -91,6 +98,14 @@ export interface ChatMessage {
   latencySec?: number | string;
   sources?: { document: string; page?: number | string }[];
   timestamp?: string;
+  source?: 'local' | 'web' | 'none' | string;
+  needsWebPermission?: boolean;
+  webPermissionGranted?: boolean | null;
+  webResults?: WebResultItem[];
+  originalQuestion?: string;
+  attachedFilePath?: string;
+  attachedDocName?: string;
+  permissionResolved?: boolean;
 }
 
 export interface PipelineStep {
